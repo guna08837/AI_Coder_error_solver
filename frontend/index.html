@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Multi-Language Code Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  /* Body and background */
+  body {
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(-45deg, #1d2b64, #f8cdda, #1d2b64, #f8cdda);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+  @keyframes gradientBG {
+    0%{background-position:0% 50%;}
+    50%{background-position:100% 50%;}
+    100%{background-position:0% 50%;}
+  }
+
+  /* Container */
+  .container {
+    background: #fff;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+    max-width: 950px;
+    width: 100%;
+    animation: fadeSlide 1s ease-in-out;
+  }
+  @keyframes fadeSlide {
+    0%{opacity:0; transform: translateY(-30px);}
+    100%{opacity:1; transform: translateY(0);}
+  }
+
+  h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+  }
+
+  /* Code editor */
+  .editor {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 14px;
+    border-radius: 10px;
+    border: 2px solid #007bff;
+    height: 250px;
+    overflow: auto;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #f5f7fa;
+    resize: vertical;
+  }
+
+  select {
+    padding: 8px 12px;
+    font-size: 14px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    border: 1px solid #007bff;
+  }
+
+  button {
+    display: inline-block;
+    padding: 14px 28px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #fff;
+    background: linear-gradient(45deg, #007bff, #00c6ff);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.3s, background 0.3s;
+    width: 100%;
+  }
+  button:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    background: linear-gradient(45deg, #00c6ff, #007bff);
+  }
+
+  /* Result box */
+  .result {
+    margin-top: 25px;
+    padding: 20px;
+    border-radius: 15px;
+    background: #f4f6f9;
+    min-height: 150px;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 14px;
+    white-space: pre-wrap;
+    position: relative;
+    overflow-x: auto;
+    animation: fadeSlide 1s ease-in-out;
+  }
+
+  .output { color: #3498db; font-weight: bold; }
+  .error { color: #e74c3c; font-weight: bold; }
+  .suggestion { color: #2ecc71; margin-top: 10px; font-weight: bold; }
+
+  /* Loader */
+  .loader {
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #007bff;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    position: absolute;
+    right: 20px;
+    top: 20px;
+  }
+  @keyframes spin {
+    0%{transform:rotate(0deg);}
+    100%{transform:rotate(360deg);}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>AI Multi-Language Code Analyzer</h1>
+
+  <select id="languageSelect">
+    <option value="python">Python</option>
+    <option value="javascript">JavaScript</option>
+    <option value="java">Java</option>
+    <option value="c">C</option>
+  </select>
+
+  <div id="codeInput" class="editor" contenteditable="true" spellcheck="false">
+# Write your code here...
+  </div>
+
+  <button onclick="analyzeCode()">Analyze Code</button>
+
+  <div class="result" id="resultOutput"></div>
+</div>
+
+<script>
+async function analyzeCode() {
+  const code = document.getElementById('codeInput').innerText;
+  const language = document.getElementById('languageSelect').value;
+  const outputBox = document.getElementById('resultOutput');
+
+  // Show loader
+  outputBox.innerHTML = '<div class="loader"></div>';
+
+  try {
+    const response = await fetch('/analyse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, language })
+    });
+
+    const data = await response.json();
+    let formatted = data.output;
+    let errorPart = '', suggestionPart = '', normalOutput = '';
+
+    if(formatted.includes('AI Suggestion:')) {
+      [formatted, suggestionPart] = formatted.split('AI Suggestion:');
+    }
+
+    if(formatted.includes('Error detected:')) {
+      errorPart = formatted.trim();
+    } else {
+      normalOutput = formatted.trim();
+    }
+
+    outputBox.innerHTML = '';
+    if(normalOutput) outputBox.innerHTML += `<div class="output">${normalOutput}</div>`;
+    if(errorPart) outputBox.innerHTML += `<div class="error">${errorPart}</div>`;
+    if(suggestionPart) outputBox.innerHTML += `<div class="suggestion">${suggestionPart.trim()}</div>`;
+
+  } catch(err) {
+    outputBox.innerHTML = `<div class="error">Error connecting to backend: ${err}</div>`;
+  }
+}
+</script>
+</body>
+</html>
